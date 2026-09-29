@@ -1,4 +1,5 @@
 import { getUpcomingMatches } from "@/features/matches/queries/get-upcoming-matches";
+import Link from "next/link";
 
 export default async function HomePage() {
   const matches = await getUpcomingMatches();
@@ -12,7 +13,11 @@ export default async function HomePage() {
 
         <div className="space-y-4">
           {matches.map((match) => (
-            <article key={match.id} className="rounded-lg border p-4">
+            <Link
+              key={match.id}
+              href={`/match/${match.id}`}
+              className="block rounded-lg border p-4 transition hover:bg-gray-50"
+            >
               <div className="mb-2 text-sm text-gray-500">
                 {match.league.name}
               </div>
@@ -28,7 +33,7 @@ export default async function HomePage() {
               <div className="mt-3 text-sm text-gray-500">
                 {match.startTime.toLocaleString()}
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
