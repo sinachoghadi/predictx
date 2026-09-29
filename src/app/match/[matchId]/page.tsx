@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { getMatchById } from "@/features/matches/queries/get-match-by-id";
+import { PredictionSlip } from "@/features/predictions/components/prediction-slip";
+import { SelectionButton } from "@/features/predictions/components/selection-button";
 
 type MatchPageProps = {
   params: Promise<{
@@ -8,9 +10,7 @@ type MatchPageProps = {
   }>;
 };
 
-export default async function MatchPage({
-  params,
-}: MatchPageProps) {
+export default async function MatchPage({ params }: MatchPageProps) {
   const { matchId } = await params;
 
   const match = await getMatchById(matchId);
@@ -34,40 +34,34 @@ export default async function MatchPage({
           {match.startTime.toLocaleString()}
         </div>
 
-        <div className="mt-2 text-sm">
-          Status: {match.status}
-        </div>
+        <div className="mt-2 text-sm">Status: {match.status}</div>
       </div>
 
       <section className="space-y-6">
         {match.markets.map((market) => (
-          <div
-            key={market.id}
-            className="rounded-lg border p-4"
-          >
-            <h2 className="mb-4 text-lg font-semibold">
-              {market.name}
-            </h2>
+          <div key={market.id} className="rounded-lg border p-4">
+            <h2 className="mb-4 text-lg font-semibold">{market.name}</h2>
 
             <div className="grid gap-3 sm:grid-cols-3">
               {market.selections.map((selection) => (
-                <div
+                <SelectionButton
                   key={selection.id}
-                  className="rounded-md border p-3"
-                >
-                  <div className="font-medium">
-                    {selection.name}
-                  </div>
-
-                  <div className="mt-1 text-sm text-gray-500">
-                    Odds: {selection.odds.toString()}
-                  </div>
-                </div>
+                  selection={{
+                    selectionId: selection.id,
+                    marketId: market.id,
+                    matchId: match.id,
+                    selectionName: selection.name,
+                    marketName: market.name,
+                    odds: Number(selection.odds),
+                  }}
+                />
               ))}
             </div>
           </div>
         ))}
       </section>
+
+      <PredictionSlip />
     </main>
   );
 }
