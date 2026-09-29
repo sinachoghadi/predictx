@@ -10,7 +10,7 @@ type SelectionButtonProps = {
 };
 
 export function SelectionButton({ selection }: SelectionButtonProps) {
-  const addItem = usePredictionSlipStore((state) => state.addItem);
+  const toggleItem = usePredictionSlipStore((state) => state.toggleItem);
 
   const isSelected = usePredictionSlipStore((state) =>
     state.items.some((item) => item.selectionId === selection.selectionId),
@@ -19,7 +19,7 @@ export function SelectionButton({ selection }: SelectionButtonProps) {
   return (
     <button
       type="button"
-      onClick={() => addItem(selection)}
+      onClick={() => toggleItem(selection)}
       className={`rounded-md border px-4 py-3 text-left transition ${
         isSelected
           ? "border-blue-600 bg-blue-50"

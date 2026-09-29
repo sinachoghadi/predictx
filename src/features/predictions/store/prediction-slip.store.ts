@@ -12,7 +12,7 @@ export type PredictionSlipItem = {
 type PredictionSlipState = {
   items: PredictionSlipItem[];
 
-  addItem: (item: PredictionSlipItem) => void;
+  toggleItem: (item: PredictionSlipItem) => void;
   removeItem: (selectionId: string) => void;
   clear: () => void;
 };
@@ -20,12 +20,29 @@ type PredictionSlipState = {
 export const usePredictionSlipStore = create<PredictionSlipState>((set) => ({
   items: [],
 
-  addItem: (item) =>
+  toggleItem: (item) =>
     set((state) => {
-      const itemsWithoutSameMarket = state.items.filter(
-        (existingItem) => existingItem.marketId !== item.marketId,
+      const isAlreadySelected = state.items.some(
+        (existingItem) =>
+          existingItem.selectionId === item.selectionId,
       );
-  
+
+      // کلیک مجدد روی Selection فعلی → حذف
+      if (isAlreadySelected) {
+        return {
+          items: state.items.filter(
+            (existingItem) =>
+              existingItem.selectionId !== item.selectionId,
+          ),
+        };
+      }
+
+      // Selection دیگری از همین Market → جایگزین
+      const itemsWithoutSameMarket = state.items.filter(
+        (existingItem) =>
+          existingItem.marketId !== item.marketId,
+      );
+
       return {
         items: [...itemsWithoutSameMarket, item],
       };
