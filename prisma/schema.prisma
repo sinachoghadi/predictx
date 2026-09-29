@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,218 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  CANCELLED
+}
+
+enum PredictionStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+}
+
+enum WalletTransactionType {
+  WELCOME_BONUS
+  PREDICTION_DEBIT
+  PREDICTION_WIN
+  REFUND
+  ADJUSTMENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(USER)
+
+  predictions Prediction[]
+  wallet      Wallet?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Sport {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  leagues League[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model League {
+  id      String @id @default(cuid())
+  name    String
+  slug    String
+  sportId String
+
+  sport Sport @relation(fields: [sportId], references: [id], onDelete: Restrict)
+
+  matches Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportId, slug])
+  @@index([sportId])
+}
+
+model Team {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Match {
+  id String @id @default(cuid())
+
+  leagueId   String
+  homeTeamId String
+  awayTeamId String
+
+  startTime DateTime
+  status    MatchStatus @default(SCHEDULED)
+
+  homeScore Int?
+  awayScore Int?
+
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Restrict)
+  homeTeam Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeam Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+
+  markets Market[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leagueId])
+  @@index([startTime])
+  @@index([status])
+}
+
+model Market {
+  id      String @id @default(cuid())
+  matchId String
+  name    String
+  key     String
+
+  match      Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  selections Selection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([matchId, key])
+  @@index([matchId])
+}
+
+model Selection {
+  id       String @id @default(cuid())
+  marketId String
+
+  name String
+  key  String
+
+  odds Decimal @db.Decimal(8, 2)
+
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  predictionItems PredictionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([marketId, key])
+  @@index([marketId])
+}
+
+model Prediction {
+  id     String @id @default(cuid())
+  userId String
+
+  stakePoints     Int
+  totalOdds       Decimal @db.Decimal(10, 2)
+  potentialPoints Int
+
+  status PredictionStatus @default(PENDING)
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items PredictionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PredictionItem {
+  id           String @id @default(cuid())
+  predictionId String
+  selectionId  String
+
+  oddsAtPrediction Decimal @db.Decimal(8, 2)
+
+  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  selection  Selection  @relation(fields: [selectionId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@unique([predictionId, selectionId])
+  @@index([predictionId])
+  @@index([selectionId])
+}
+
+model Wallet {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  balance Int @default(0)
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WalletTransaction {
+  id       String @id @default(cuid())
+  walletId String
+
+  type   WalletTransactionType
+  amount Int
+
+  referenceId String?
+  description String?
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([walletId])
+  @@index([createdAt])
+  @@index([referenceId])
 }
